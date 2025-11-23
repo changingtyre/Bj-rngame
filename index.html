@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Hoppe Spil 🌾</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c5f2d;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #gameContainer {
+            position: relative;
+            background: linear-gradient(to bottom, #87CEEB 0%, #90EE90 70%, #8B7355 100%);
+            border: 5px solid #654321;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+        }
+
+        #scoreBoard {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5f2d;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        #instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .emoji {
+            font-size: 1.3em;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        #gameOver h2 {
+            color: #d9534f;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        #gameOver button {
+            background: #5cb85c;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        #gameOver button:hover {
+            background: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌾 Mark Hoppe Spil 🌾</h1>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="gameOver">
+            <h2>Spillet er slut!</h2>
+            <p style="font-size: 24px; margin: 20px 0;">Din score: <span id="finalScore">0</span></p>
+            <button onclick="restartGame()">Spil igen! 🎮</button>
+        </div>
+    </div>
+
+    <div id="scoreBoard">
+        Score: <span id="score">0</span> 🌟
+    </div>
+
+    <div id="instructions">
+        <p><strong>Sådan spiller du:</strong></p>
+        <p class="emoji">Tryk på MELLEMRUM eller klik for at hoppe! 🦘</p>
+        <p>Hop over stubbe 🪵, køer 🐄 og heste 🐴</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let score = 0;
+        let gameSpeed = 3;
+        let isJumping = false;
+        let isGameOver = false;
+        let jumpVelocity = 0;
+        const gravity = 0.6;
+        const jumpStrength = -15;
+
+        // Player object
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 60,
+            velocityY: 0,
+            isOnGround: true
+        };
+
+        // Ground level
+        const groundLevel = 300;
+
+        // Obstacles array
+        let obstacles = [];
+        let frameCount = 0;
+
+        // Obstacle types
+        const obstacleTypes = [
+            { emoji: '🪵', width: 40, height: 40, name: 'stub' },
+            { emoji: '🐄', width: 60, height: 50, name: 'ko' },
+            { emoji: '🐴', width: 60, height: 50, name: 'hest' }
+        ];
+
+        // Draw player
+        function drawPlayer() {
+            // Simple person shape
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y + 15, 15, 0, Math.PI * 2); // Head
+            ctx.fill();
+
+            // Body
+            ctx.fillStyle = '#4169E1';
+            ctx.fillRect(player.x + 12, player.y + 30, 16, 25);
+
+            // Arms
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(player.x + 12, player.y + 35);
+            ctx.lineTo(player.x + 5, player.y + 45);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(player.x + 28, player.y + 35);
+            ctx.lineTo(player.x + 35, player.y + 45);
+            ctx.stroke();
+
+            // Legs
+            ctx.strokeStyle = '#2F4F4F';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(player.x + 15, player.y + 55);
+            ctx.lineTo(player.x + 10, player.y + 60);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(player.x + 25, player.y + 55);
+            ctx.lineTo(player.x + 30, player.y + 60);
+            ctx.stroke();
+        }
+
+        // Draw background
+        function drawBackground() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, 280);
+
+            // Grass
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 280, canvas.width, 80);
+
+            // Ground/dirt
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, 360, canvas.width, 40);
+
+            // Add some clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.arc(150 - (frameCount % 800), 80, 30, 0, Math.PI * 2);
+            ctx.arc(180 - (frameCount % 800), 80, 40, 0, Math.PI * 2);
+            ctx.arc(210 - (frameCount % 800), 80, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(500 - (frameCount % 1000), 120, 25, 0, Math.PI * 2);
+            ctx.arc(525 - (frameCount % 1000), 120, 35, 0, Math.PI * 2);
+            ctx.arc(550 - (frameCount % 1000), 120, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Grass details
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(i - (frameCount * 2) % 40, 280, 2, 10);
+                ctx.fillRect(i + 10 - (frameCount * 2) % 40, 285, 2, 8);
+                ctx.fillRect(i + 20 - (frameCount * 2) % 40, 283, 2, 12);
+            }
+        }
+
+        // Draw obstacles
+        function drawObstacles() {
+            ctx.font = '50px Arial';
+            obstacles.forEach(obstacle => {
+                ctx.fillText(obstacle.type.emoji, obstacle.x, obstacle.y + obstacle.type.height);
+            });
+        }
+
+        // Create new obstacle
+        function createObstacle() {
+            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            obstacles.push({
+                x: canvas.width,
+                y: groundLevel - type.height,
+                type: type
+            });
+        }
+
+        // Update game
+        function update() {
+            if (isGameOver) return;
+
+            frameCount++;
+
+            // Update player physics
+            if (!player.isOnGround) {
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+
+                if (player.y >= groundLevel) {
+                    player.y = groundLevel;
+                    player.velocityY = 0;
+                    player.isOnGround = true;
+                    isJumping = false;
+                }
+            }
+
+            // Create obstacles
+            if (frameCount % 120 === 0) {
+                createObstacle();
+            }
+
+            // Update obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= gameSpeed;
+
+                // Check collision
+                if (obstacle.x < player.x + player.width &&
+                    obstacle.x + obstacle.type.width > player.x &&
+                    obstacle.y < player.y + player.height &&
+                    obstacle.y + obstacle.type.height > player.y) {
+                    endGame();
+                }
+
+                // Remove off-screen obstacles and increase score
+                if (obstacle.x + obstacle.type.width < 0) {
+                    obstacles.splice(index, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+
+                    // Increase speed gradually
+                    if (score % 5 === 0 && gameSpeed < 7) {
+                        gameSpeed += 0.2;
+                    }
+                }
+            });
+        }
+
+        // Draw everything
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            drawPlayer();
+            drawObstacles();
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            if (!isGameOver) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Jump function
+        function jump() {
+            if (player.isOnGround && !isGameOver) {
+                player.velocityY = jumpStrength;
+                player.isOnGround = false;
+                isJumping = true;
+            }
+        }
+
+        // End game
+        function endGame() {
+            isGameOver = true;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        // Restart game
+        function restartGame() {
+            isGameOver = false;
+            score = 0;
+            gameSpeed = 3;
+            obstacles = [];
+            frameCount = 0;
+            player.y = groundLevel;
+            player.velocityY = 0;
+            player.isOnGround = true;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('gameOver').style.display = 'none';
+            gameLoop();
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        canvas.addEventListener('click', jump);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        // Start game
+        gameLoop();
+    </script>
+</body>
+</html>
