@@ -158,11 +158,11 @@
         let obstacles = [];
         let frameCount = 0;
 
-        // Obstacle types
+        // Obstacle types (using 60px font, emojis are roughly 50x50 pixels)
         const obstacleTypes = [
-            { emoji: '🪵', width: 50, height: 50, name: 'stub' },
-            { emoji: '🐄', width: 70, height: 60, name: 'ko' },
-            { emoji: '🐴', width: 70, height: 60, name: 'hest' }
+            { emoji: '🪵', width: 45, height: 50, name: 'stub' },
+            { emoji: '🐄', width: 55, height: 50, name: 'ko' },
+            { emoji: '🐴', width: 55, height: 50, name: 'hest' }
         ];
 
         // Draw player
@@ -202,6 +202,11 @@
             ctx.moveTo(player.x + 25, player.y + 55);
             ctx.lineTo(player.x + 30, player.y + 60);
             ctx.stroke();
+
+            // Draw collision box for debugging
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
         }
 
         // Draw background
@@ -244,9 +249,17 @@
         // Draw obstacles
         function drawObstacles() {
             ctx.font = '60px Arial';  // Larger emojis
+            ctx.textBaseline = 'bottom';  // Set baseline to bottom
             obstacles.forEach(obstacle => {
-                ctx.fillText(obstacle.type.emoji, obstacle.x, obstacle.y + obstacle.type.height);
+                // Draw emoji at ground level (360)
+                ctx.fillText(obstacle.type.emoji, obstacle.x, 360);
+
+                // Draw collision box for debugging
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(obstacle.x, obstacle.y, obstacle.type.width, obstacle.type.height);
             });
+            ctx.textBaseline = 'alphabetic';  // Reset to default
         }
 
         // Create new obstacle
