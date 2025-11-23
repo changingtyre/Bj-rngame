@@ -202,11 +202,6 @@
             ctx.moveTo(player.x + 25, player.y + 55);
             ctx.lineTo(player.x + 30, player.y + 60);
             ctx.stroke();
-
-            // Draw collision box for debugging
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(player.x, player.y, player.width, player.height);
         }
 
         // Draw background
@@ -253,11 +248,6 @@
             obstacles.forEach(obstacle => {
                 // Draw emoji at ground level (360)
                 ctx.fillText(obstacle.type.emoji, obstacle.x, 360);
-
-                // Draw collision box for debugging
-                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(obstacle.x, obstacle.y, obstacle.type.width, obstacle.type.height);
             });
             ctx.textBaseline = 'alphabetic';  // Reset to default
         }
