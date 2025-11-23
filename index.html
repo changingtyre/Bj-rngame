@@ -144,14 +144,14 @@
         // Player object
         const player = {
             x: 100,
-            y: 300,
+            y: 300,  // Top of player (bottom will be at 300 + 60 = 360)
             width: 40,
             height: 60,
             velocityY: 0,
             isOnGround: true
         };
 
-        // Ground level
+        // Ground level (top of player when on ground, player bottom at 360)
         const groundLevel = 300;
 
         // Obstacles array
@@ -160,9 +160,9 @@
 
         // Obstacle types
         const obstacleTypes = [
-            { emoji: '🪵', width: 40, height: 40, name: 'stub' },
-            { emoji: '🐄', width: 60, height: 50, name: 'ko' },
-            { emoji: '🐴', width: 60, height: 50, name: 'hest' }
+            { emoji: '🪵', width: 50, height: 50, name: 'stub' },
+            { emoji: '🐄', width: 70, height: 60, name: 'ko' },
+            { emoji: '🐴', width: 70, height: 60, name: 'hest' }
         ];
 
         // Draw player
@@ -243,7 +243,7 @@
 
         // Draw obstacles
         function drawObstacles() {
-            ctx.font = '50px Arial';
+            ctx.font = '60px Arial';  // Larger emojis
             obstacles.forEach(obstacle => {
                 ctx.fillText(obstacle.type.emoji, obstacle.x, obstacle.y + obstacle.type.height);
             });
@@ -254,7 +254,7 @@
             const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
             obstacles.push({
                 x: canvas.width,
-                y: groundLevel - type.height,
+                y: 360 - type.height,  // Place on ground (ground is at y=360)
                 type: type
             });
         }
